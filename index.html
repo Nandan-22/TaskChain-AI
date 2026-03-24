@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaskChain AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --panel: #111118;
+      --border: #1e1e2e;
+      --accent: #00ffe0;
+      --accent2: #7c3aed;
+      --accent3: #f59e0b;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --high: #ff4d6d;
+      --med: #f59e0b;
+      --low: #00ffe0;
+      --sales: #a78bfa;
+      --support: #f87171;
+      --general: #6ee7b7;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,224,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,224,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 48px;
+    }
+
+    .logo {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .logo-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--text) 40%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+      margin-top: 8px;
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* Main layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 2rem; }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: #2e2e42; }
+
+    .card-full { grid-column: 1 / -1; }
+
+    .card-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* Input area */
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      resize: none;
+      height: 130px;
+      placeholder-color: var(--muted);
+    }
+
+    textarea::placeholder { color: var(--muted); }
+
+    .textarea-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    #charCount {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover { background: #00d4bc; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-chain {
+      background: linear-gradient(135deg, var(--accent2), #4f46e5);
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .btn-chain:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-chain:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
+
+    /* Results */
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .result-key {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .result-val {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Space Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-high   { background: rgba(255,77,109,0.12); color: var(--high);    border: 1px solid rgba(255,77,109,0.25); }
+    .badge-medium { background: rgba(245,158,11,0.12); color: var(--med);     border: 1px solid rgba(245,158,11,0.25); }
+    .badge-low    { background: rgba(0,255,224,0.10);  color: var(--low);     border: 1px solid rgba(0,255,224,0.20); }
+    .badge-sales  { background: rgba(167,139,250,0.12);color: var(--sales);   border: 1px solid rgba(167,139,250,0.25); }
+    .badge-support{ background: rgba(248,113,113,0.12);color: var(--support); border: 1px solid rgba(248,113,113,0.25); }
+    .badge-general{ background: rgba(110,231,183,0.12);color: var(--general); border: 1px solid rgba(110,231,183,0.25); }
+
+    /* Suggested reply box */
+    .reply-box {
+      background: rgba(0,255,224,0.04);
+      border: 1px solid rgba(0,255,224,0.12);
+      border-radius: 10px;
+      padding: 14px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text);
+      margin-top: 12px;
+      min-height: 60px;
+    }
+
+    /* Blockchain */
+    .chain-status {
+      margin-top: 14px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+    }
+
+    .tx-block {
+      background: rgba(124,58,237,0.06);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+
+    .tx-label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .tx-hash {
+      font-size: 11px;
+      color: var(--accent2);
+      word-break: break-all;
+      line-height: 1.6;
+    }
+
+    .tx-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .tx-confirmed {
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+
+    .spinner-white {
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Placeholder state */
+    .placeholder-text {
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-align: center;
+      padding: 20px 0;
+      line-height: 1.8;
+    }
+
+    /* Slide-in animation */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in { animation: slideIn 0.3s ease forwards; }
+
+    /* Log */
+    .log-list {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .log-entry {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .log-time { color: var(--accent); flex-shrink: 0; }
+
+    /* Error */
+    .error-box {
+      background: rgba(255,77,109,0.08);
+      border: 1px solid rgba(255,77,109,0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--high);
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">
+      <span class="logo-tag">// hackathon build</span>
+      <h1>TaskChain AI</h1>
+      <div class="header-badge">
+        <span class="dot"></span>
+        AI-Powered · Blockchain-Logged
+      </div>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- Input Card -->
+    <div class="card card-full">
+      <div class="card-label">// customer message input</div>
+      <textarea id="msgInput" placeholder="Paste customer message here...&#10;e.g. 'I have an urgent issue with my order, it's a billing problem and I need help now.'"
+        oninput="updateCount()"></textarea>
+      <div class="textarea-footer">
+        <span id="charCount" class="card-label">0 chars</span>
+        <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()">
+          <span id="analyzeBtnText">Analyze →</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Result Cards -->
+    <div class="card" id="priorityCard">
+      <div class="card-label">// ai analysis</div>
+      <div id="analysisContent">
+        <div class="placeholder-text">Run analysis to<br>see AI results</div>
+      </div>
+    </div>
+
+    <div class="card" id="replyCard">
+      <div class="card-label">// suggested reply</div>
+      <div id="replyContent">
+        <div class="placeholder-text">Suggested reply will<br>appear here</div>
+      </div>
+    </div>
+
+    <!-- Blockchain Card -->
+    <div class="card card-full" id="chainCard">
+      <div class="card-label">// blockchain logger</div>
+      <button class="btn btn-chain" id="logBtn" onclick="logToChain()" disabled>
+        <span id="logBtnText">Log to Blockchain</span>
+      </button>
+      <div id="chainContent"></div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="card card-full">
+      <div class="card-label">// session log</div>
+      <div class="log-list" id="logList">
+        <div class="log-entry">
+          <span class="log-time">[00:00]</span>
+          <span>System initialized. Waiting for input...</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────────────────
+  const API_BASE = 'http://127.0.0.1:5000'; // Change to your backend URL if different
+
+  // ─── STATE ─────────────────────────────────────────────────────────────────
+  let currentResult = null;
+  let sessionStart = Date.now();
+
+  // ─── UTILS ─────────────────────────────────────────────────────────────────
+  function now() {
+    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    return `[${m}:${s}]`;
+  }
+
+  function addLog(msg) {
+    const list = document.getElementById('logList');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry animate-in';
+    entry.innerHTML = `<span class="log-time">${now()}</span><span>${msg}</span>`;
+    list.appendChild(entry);
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function updateCount() {
+    const val = document.getElementById('msgInput').value;
+    document.getElementById('charCount').textContent = `${val.length} chars`;
+  }
+
+  function priorityBadge(p) {
+    const map = { High: 'high', Medium: 'medium', Low: 'low' };
+    const cls = map[p] || 'low';
+    const icons = { High: '🔴', Medium: '🟡', Low: '🟢' };
+    return `<span class="badge badge-${cls}">${icons[p] || ''} ${p}</span>`;
+  }
+
+  function categoryBadge(c) {
+    const map = { Sales: 'sales', Support: 'support', General: 'general' };
+    const cls = map[c] || 'general';
+    return `<span class="badge badge-${cls}">${c}</span>`;
+  }
+
+  // ─── ANALYZE ───────────────────────────────────────────────────────────────
+  async function analyze() {
+    const msg = document.getElementById('msgInput').value.trim();
+    if (!msg) { addLog('⚠ No message entered.'); return; }
+
+    const btn = document.getElementById('analyzeBtn');
+    const btnText = document.getElementById('analyzeBtnText');
+    btn.disabled = true;
+    btnText.innerHTML = '<span class="spinner"></span> Analyzing...';
+    addLog(`Sending message for analysis (${msg.length} chars)...`);
+
+    document.getElementById('analysisContent').innerHTML =
+      `<div class="placeholder-text"><span class="spinner spinner-white"></span><br><br>Running AI...</div>`;
+    document.getElementById('replyContent').innerHTML =
+      `<div class="placeholder-text"><span class="spinner spinner-white"></span></div>`;
+
+    try {
+      const res = await fetch(`${API_BASE}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+      currentResult = data;
+
+      // Render analysis
+      document.getElementById('analysisContent').innerHTML = `
+        <div class="animate-in">
+          <div class="result-row">
+            <span class="result-key">Priority</span>
+            ${priorityBadge(data.priority)}
+          </div>
+          <div class="result-row">
+            <span class="result-key">Category</span>
+            ${categoryBadge(data.category)}
+          </div>
+          <div class="result-row">
+            <span class="result-key">Confidence</span>
+            <span class="result-val" style="font-family:'Space Mono',monospace;font-size:13px;color:var(--accent)">${data.confidence || '—'}%</span>
+          </div>
+        </div>
+      `;
+
+      // Render reply
+      document.getElementById('replyContent').innerHTML = `
+        <div class="animate-in">
+          <div class="card-label">Suggested Response</div>
+          <div class="reply-box">${data.suggested_reply}</div>
+        </div>
+      `;
+
+      // Enable blockchain button
+      document.getElementById('logBtn').disabled = false;
+      document.getElementById('chainContent').innerHTML =
+        `<div class="chain-status" style="color:var(--muted);margin-top:10px;">✓ Analysis complete. Ready to log to blockchain.</div>`;
+
+      addLog(`✓ Analysis done — Priority: ${data.priority}, Category: ${data.category}`);
+
+    } catch (err) {
+      document.getElementById('analysisContent').innerHTML =
+        `<div class="error-box">⚠ ${err.message}<br><br>Make sure the Flask backend is running on port 5000.</div>`;
+      document.getElementById('replyContent').innerHTML = '';
+      addLog(`✗ Error: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btnText.textContent = 'Analyze →';
+    }
+  }
+
+  // ─── LOG TO BLOCKCHAIN ─────────────────────────────────────────────────────
+  async function logToChain() {
+    if (!currentResult) return;
+
+    const btn = document.getElementById('logBtn');
+    const btnText = document.getElementById('logBtnText');
+    btn.disabled = true;
+    btnText.innerHTML = '<span class="spinner spinner-white"></span> Broadcasting...';
+    addLog('Broadcasting to blockchain network...');
+
+    try {
+      const res = await fetch(`${API_BASE}/log_blockchain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: document.getElementById('msgInput').value.trim(),
+          priority: currentResult.priority,
+          category: currentResult.category
+        })
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+
+      const ts = new Date().toLocaleTimeString();
+      document.getElementById('chainContent').innerHTML = `
+        <div class="tx-block animate-in">
+          <div class="tx-label">Transaction Hash</div>
+          <div class="tx-hash">${data.tx_hash}</div>
+          <div class="tx-row">
+            <span>Block #${data.block_number || '—'}</span>
+            <span>Network: ${data.network || 'Shardeum Testnet'}</span>
+            <span class="tx-confirmed">✓ Confirmed</span>
+          </div>
+          <div class="tx-row">
+            <span>Timestamp: ${ts}</span>
+            <span>Gas: ${data.gas_used || '21,000'} gwei</span>
+          </div>
+        </div>
+      `;
+
+      addLog(`✓ Logged! TX: ${data.tx_hash.slice(0, 20)}...`);
+      btnText.textContent = '✓ Logged to Blockchain';
+
+    } catch (err) {
+      document.getElementById('chainContent').innerHTML =
+        `<div class="error-box">⚠ ${err.message}</div>`;
+      addLog(`✗ Blockchain error: ${err.message}`);
+      btn.disabled = false;
+      btnText.textContent = 'Retry Log →';
+    }
+  }
+</script>
+</body>
+</html>
